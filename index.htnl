@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast</title>
+</head>
+
+<body>
+    <h1>Weather Forecast</h1>
+
+    <div id="map"></div>
+
+    <script>
+        // Your GeoJSON data
+        const geoJsonData = {
+            // ... (paste your GeoJSON data here)
+        };
+
+        // Create a map using Leaflet library
+        const map = L.map('map').setView([37.7767671, -122.4539421], 13);
+
+        // Add a tile layer to the map (you can use your preferred tile layer)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add GeoJSON layer to the map
+        L.geoJSON(geoJsonData, {
+            style: {
+                color: 'blue',
+                weight: 2
+            }
+        }).addTo(map);
+    </script>
+</body>
+
+</html>
