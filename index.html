@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App - Easy Tutorials</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="card">
+    <div class="search">
+        <input type="text" placeholder="enter city name" spellcheck="false">
+        <button><img src="images/search.png"></button>
+    </div>
+    <div class="error">
+        <p>Invalid city name</p>
+    </div>
+    <div class="forecast">
+        <!-- Day 1 -->
+        <div class="forecast-day">
+            <h2 class="day-name"></h2>
+            <img class="weather-icon" src="">
+            <p class="temp"></p>
+            <div class="details">
+                <div class="col">
+                    <img src="images/humidity.png">
+                    <div>
+                        <p class="humidity"></p>
+                        <p>Humidity</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <img src="images/wind.png">
+                    <div>
+                        <p class="wind"></p>
+                        <p>Wind Speed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day 2 -->
+        <div class="forecast-day">
+            <h2 class="day-name"></h2>
+            <img class="weather-icon" src="">
+            <p class="temp"></p>
+            <div class="details">
+                <div class="col">
+                    <img src="images/humidity.png">
+                    <div>
+                        <p class="humidity"></p>
+                        <p>Humidity</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <img src="images/wind.png">
+                    <div>
+                        <p class="wind"></p>
+                        <p>Wind Speed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day 3 -->
+        <div class="forecast-day">
+            <h2 class="day-name"></h2>
+            <img class="weather-icon" src="">
+            <p class="temp"></p>
+            <div class="details">
+                <div class="col">
+                    <img src="images/humidity.png">
+                    <div>
+                        <p class="humidity"></p>
+                        <p>Humidity</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <img src="images/wind.png">
+                    <div>
+                        <p class="wind"></p>
+                        <p>Wind Speed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const apiKey = "c92c4bb4c0437b17c98c932f959dcceb"; 
+    const apiUrl = "https://api.openweathermap.org/data/2.5/forecast?&units=metric&q=";
+
+    const searchBox = document.querySelector(".search input");
+    const searchBtn = document.querySelector(".search button");
+
+    async function checkWeather(city) {
+        const response = await fetch(apiUrl + city + `&appid=${apiKey}`);
+        if (response.status == 404) {
+            document.querySelector(".error").style.display = "block";
+            document.querySelector(".forecast").style.display = "none";
+        } else {
+            const data = await response.json();
+            const forecastData = data.list;
+
+            // Display forecast for the next three days
+            for (let i = 0; i < 3; i++) {
+                const forecastDay = document.querySelector(`.forecast-day:nth-child(${i + 1})`);
+                const dayName = new Date(forecastData[i * 8].dt * 1000).toLocaleDateString('en-US', { weekday: 'long' });
+
+                forecastDay.querySelector('.day-name').innerHTML = dayName;
+                forecastDay.querySelector('.temp').innerHTML = Math.round(forecastData[i * 8].main.temp) + "°C";
+                forecastDay.querySelector('.humidity').innerHTML = forecastData[i * 8].main.humidity + "%";
+                forecastDay.querySelector('.wind').innerHTML = forecastData[i * 8].wind.speed + " km/h";
+
+                const weatherIcon = forecastDay.querySelector('.weather-icon');
+                const weatherMain = forecastData[i * 8].weather[0].main;
+
+                // Update the weather icon based on weather condition
+                if (weatherMain == "Clouds") {
+                    weatherIcon.src = "images/clouds.png";
+                } else if (weatherMain == "Rain") {
+                    weatherIcon.src = "images/rain.png";
+                } else if (weatherMain == "Clear") {
+                    weatherIcon.src = "images/clear.png";
+                } else if (weatherMain == "Drizzle") {
+                    weatherIcon.src = "images/drizzle.png";
+                } else if (weatherMain == "Mist") {
+                    weatherIcon.src = "images/mist.png";
+                } else if (weatherMain == "Snow") {
+                    weatherIcon.src = "images/snow.png";
+                }
+            }
+
+            document.querySelector(".forecast").style.display = "flex";
+            document.querySelector(".error").style.display = "none";
+        }
+    }
+
+    searchBtn.addEventListener("click", () => {
+        checkWeather(searchBox.value);
+    });
+</script>
+</body>
+</html>
