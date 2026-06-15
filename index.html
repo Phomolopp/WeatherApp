@@ -1,36 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Premium Weather App</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Outlook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="Style.css">
 </head>
 <body>
-  <!-- Animated background and weather effects -->
   <div class="weather-bg" id="weather-bg"></div>
-  <canvas id="weather-canvas"></canvas>
+  <canvas id="weather-canvas" aria-hidden="true"></canvas>
 
-  <div id="app">
-    <div class="top-bar glass">
-      <input type="text" placeholder="Search city..." id="search-input">
-      <button id="search-btn">🔍</button>
-    </div>
-
-    <div class="current-weather glass">
-      <h1 id="city-name">City</h1>
-      <div class="weather-main">
-        <img id="weather-icon" src="" alt="weather icon">
-        <span id="temperature">25°C</span>
+  <main class="app-shell">
+    <section class="hero-panel">
+      <div class="hero-copy">
+        <p class="eyebrow">Live weather dashboard</p>
+        <h1>Weather Outlook</h1>
+        <p id="summary-line">Search a city or use your location to see what the sky is doing next.</p>
+        <div class="status-row">
+          <span id="last-updated">Waiting for weather data</span>
+          <span id="weather-alert">Forecast intelligence ready</span>
+        </div>
       </div>
-      <p id="weather-description">Clear Sky</p>
-    </div>
 
-    <div class="forecast" id="forecast-container">
-      <!-- Forecast cards will be added here -->
-    </div>
-  </div>
+      <form class="search-panel" id="search-form">
+        <label class="search-box" for="search-input">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input type="search" id="search-input" placeholder="Search city, e.g. Johannesburg" autocomplete="off">
+        </label>
+        <button class="primary-btn" id="search-btn" type="submit">Search</button>
+        <button class="icon-btn" id="location-btn" type="button" aria-label="Use current location" title="Use current location">
+          <span class="location-icon" aria-hidden="true"></span>
+        </button>
+        <div class="unit-toggle" role="group" aria-label="Temperature unit">
+          <button type="button" class="unit-btn active" data-unit="metric">C</button>
+          <button type="button" class="unit-btn" data-unit="imperial">F</button>
+        </div>
+      </form>
 
-<script src="app.js"></script>
+      <div class="recent-cities" id="recent-cities" aria-label="Recent cities"></div>
+    </section>
+
+    <section class="dashboard" aria-live="polite">
+      <article class="current-card panel">
+        <div class="current-header">
+          <div>
+            <p class="label">Current conditions</p>
+            <h2 id="city-name">Loading...</h2>
+            <p id="local-time">--</p>
+          </div>
+          <img id="weather-icon" src="images/clouds.png" alt="">
+        </div>
+        <div class="temperature-row">
+          <span id="temperature">--</span>
+          <span id="unit-symbol">C</span>
+        </div>
+        <p id="weather-description">Finding your forecast</p>
+        <div class="insight-card">
+          <span>What to expect</span>
+          <strong id="weather-insight">Loading forecast guidance...</strong>
+        </div>
+        <div class="mini-stats">
+          <div>
+            <span>Feels like</span>
+            <strong id="feels-like">--</strong>
+          </div>
+          <div>
+            <span>High / Low</span>
+            <strong id="high-low">--</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel details-panel">
+        <div class="section-heading">
+          <p class="label">Details</p>
+          <h2>Today</h2>
+        </div>
+        <div class="detail-grid" id="detail-grid"></div>
+      </article>
+
+      <article class="panel hourly-panel">
+        <div class="section-heading">
+          <p class="label">Next 24 hours</p>
+          <h2>Hourly</h2>
+        </div>
+        <div class="hourly-strip" id="hourly-container"></div>
+      </article>
+
+      <article class="panel forecast-panel">
+        <div class="section-heading">
+          <p class="label">Extended outlook</p>
+          <h2>5-day forecast</h2>
+        </div>
+        <div class="forecast-list" id="forecast-container"></div>
+      </article>
+
+      <article class="panel trend-panel">
+        <div class="section-heading">
+          <p class="label">Temperature curve</p>
+          <h2>3-hour trend</h2>
+        </div>
+        <div class="trend-chart" id="trend-chart"></div>
+      </article>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
 </body>
 </html>
