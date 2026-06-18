@@ -607,9 +607,269 @@ button {
   font-size: clamp(1.7rem, 3vw, 2.7rem);
 }
 
-#weather-icon {
-  width: clamp(86px, 12vw, 138px);
-  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.24));
+.weather-glyph {
+  --glyph-size: 52px;
+  position: relative;
+  width: var(--glyph-size);
+  height: var(--glyph-size);
+  display: inline-block;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.18));
+}
+
+.weather-glyph-lg {
+  --glyph-size: clamp(92px, 12vw, 146px);
+}
+
+.weather-glyph-sm {
+  --glyph-size: 46px;
+}
+
+.weather-glyph-xs {
+  --glyph-size: 42px;
+}
+
+.glyph-sun,
+.glyph-moon,
+.glyph-cloud {
+  position: absolute;
+  display: block;
+}
+
+.glyph-sun {
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 32%, #fff9cd 0 16%, #ffcf5a 45%, #ff8f3d 78%);
+  box-shadow:
+    0 0 calc(var(--glyph-size) * 0.26) rgba(255, 207, 90, 0.72),
+    0 0 calc(var(--glyph-size) * 0.54) rgba(255, 143, 61, 0.34);
+  animation: glyphSunPulse 2.8s ease-in-out infinite;
+}
+
+.glyph-moon {
+  inset: 17%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 32%, #ffffff 0 18%, #dce7ff 54%, #8799bd 88%);
+  box-shadow: 0 0 calc(var(--glyph-size) * 0.35) rgba(220, 232, 255, 0.38);
+}
+
+.glyph-cloud {
+  left: 13%;
+  right: 8%;
+  bottom: 27%;
+  height: 34%;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 24% 45%, #ffffff 0 32%, transparent 33%),
+    radial-gradient(circle at 48% 23%, #eef6fb 0 36%, transparent 37%),
+    radial-gradient(circle at 72% 45%, #d4e2ec 0 31%, transparent 32%),
+    linear-gradient(#e8f3f8, #b8c8d4);
+  animation: glyphCloudFloat 3.4s ease-in-out infinite;
+}
+
+.glyph-clouds .glyph-cloud.secondary {
+  opacity: 0.62;
+  transform: translate(-16%, -38%) scale(0.82);
+  animation-delay: -1.3s;
+}
+
+.glyph-clear .glyph-sun {
+  inset: 12%;
+}
+
+.glyph-clouds .glyph-sun,
+.glyph-rain .glyph-sun,
+.glyph-drizzle .glyph-sun,
+.glyph-snow .glyph-sun,
+.glyph-storm .glyph-sun,
+.glyph-mist .glyph-sun,
+.glyph-fog .glyph-sun {
+  inset: 7% auto auto 5%;
+  width: 44%;
+  height: 44%;
+  opacity: 0.84;
+}
+
+.glyph-rain .glyph-cloud,
+.glyph-drizzle .glyph-cloud,
+.glyph-storm .glyph-cloud {
+  background:
+    radial-gradient(circle at 24% 45%, #aebdca 0 32%, transparent 33%),
+    radial-gradient(circle at 48% 23%, #8da0b0 0 36%, transparent 37%),
+    radial-gradient(circle at 72% 45%, #718696 0 31%, transparent 32%),
+    linear-gradient(#8397a6, #506271);
+}
+
+.glyph-drop,
+.glyph-snow-dot,
+.glyph-fog-line,
+.glyph-lightning {
+  position: absolute;
+  display: block;
+}
+
+.glyph-drop {
+  top: 62%;
+  width: 7%;
+  height: 24%;
+  border-radius: 999px;
+  background: linear-gradient(#99f2ff, #3aa8ff);
+  transform: rotate(13deg);
+  animation: glyphRainFall 0.9s linear infinite;
+}
+
+.glyph-drop.drop-one {
+  left: 31%;
+  animation-delay: -0.15s;
+}
+
+.glyph-drop.drop-two {
+  left: 48%;
+  animation-delay: -0.34s;
+}
+
+.glyph-drop.drop-three {
+  left: 65%;
+  animation-delay: -0.52s;
+}
+
+.glyph-drizzle .glyph-drop {
+  height: 16%;
+  opacity: 0.72;
+  animation-duration: 1.25s;
+}
+
+.glyph-snow-dot {
+  top: 63%;
+  width: 9%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+  animation: glyphSnowFall 1.9s ease-in-out infinite;
+}
+
+.glyph-snow-dot.snow-one {
+  left: 30%;
+  animation-delay: -0.2s;
+}
+
+.glyph-snow-dot.snow-two {
+  left: 49%;
+  animation-delay: -0.65s;
+}
+
+.glyph-snow-dot.snow-three {
+  left: 68%;
+  animation-delay: -1s;
+}
+
+.glyph-fog-line {
+  left: 15%;
+  right: 14%;
+  height: 7%;
+  border-radius: 999px;
+  background: rgba(233, 243, 247, 0.76);
+  animation: glyphFogSlide 2.8s ease-in-out infinite alternate;
+}
+
+.glyph-fog-line.fog-one-icon {
+  top: 56%;
+}
+
+.glyph-fog-line.fog-two-icon {
+  top: 70%;
+  left: 25%;
+  animation-delay: -0.8s;
+}
+
+.glyph-fog-line.fog-three-icon {
+  top: 84%;
+  right: 28%;
+  animation-delay: -1.4s;
+}
+
+.glyph-lightning {
+  top: 47%;
+  left: 43%;
+  width: 28%;
+  height: 44%;
+  background: linear-gradient(#fff8a6, #75e6da);
+  clip-path: polygon(43% 0, 78% 0, 59% 35%, 84% 35%, 28% 100%, 42% 52%, 18% 52%);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.72));
+  animation: glyphLightning 2.4s infinite;
+}
+
+.hour-card .weather-glyph {
+  margin: 2px 0;
+}
+
+.forecast-day .weather-glyph {
+  justify-self: center;
+}
+
+@keyframes glyphSunPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes glyphCloudFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7%);
+  }
+}
+
+@keyframes glyphRainFall {
+  from {
+    opacity: 0;
+    transform: translateY(-20%) rotate(13deg);
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(55%) rotate(13deg);
+  }
+}
+
+@keyframes glyphSnowFall {
+  0%, 100% {
+    opacity: 0.45;
+    transform: translateY(-15%) translateX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(35%) translateX(20%);
+  }
+}
+
+@keyframes glyphFogSlide {
+  from {
+    transform: translateX(-7%);
+  }
+  to {
+    transform: translateX(7%);
+  }
+}
+
+@keyframes glyphLightning {
+  0%, 82%, 100% {
+    opacity: 0;
+  }
+  84%, 88%, 91% {
+    opacity: 1;
+  }
+  86%, 90% {
+    opacity: 0.22;
+  }
 }
 
 .current-actions {

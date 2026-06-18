@@ -157,6 +157,55 @@ function prettyDescription(text) {
     .join(" ");
 }
 
+function weatherGlyph(weather, description, size = "sm") {
+  const normalized = {
+    Clear: "clear",
+    Clouds: "clouds",
+    Rain: "rain",
+    Drizzle: "drizzle",
+    Thunderstorm: "storm",
+    Snow: "snow",
+    Mist: "mist",
+    Fog: "fog",
+    Haze: "fog"
+  }[weather] || "mist";
+  const label = escapeHtml(description || weather);
+  const sizeClass = size === "lg" ? "weather-glyph-lg" : size === "xs" ? "weather-glyph-xs" : "weather-glyph-sm";
+
+  const cloud = '<span class="glyph-cloud"></span>';
+  const secondCloud = '<span class="glyph-cloud secondary"></span>';
+  const sun = '<span class="glyph-sun"></span>';
+  const moon = '<span class="glyph-moon"></span>';
+  const drops = `
+    <span class="glyph-drop drop-one"></span>
+    <span class="glyph-drop drop-two"></span>
+    <span class="glyph-drop drop-three"></span>
+  `;
+  const snow = `
+    <span class="glyph-snow-dot snow-one"></span>
+    <span class="glyph-snow-dot snow-two"></span>
+    <span class="glyph-snow-dot snow-three"></span>
+  `;
+  const fog = `
+    <span class="glyph-fog-line fog-one-icon"></span>
+    <span class="glyph-fog-line fog-two-icon"></span>
+    <span class="glyph-fog-line fog-three-icon"></span>
+  `;
+
+  const parts = {
+    clear: sun,
+    clouds: `${sun}${cloud}${secondCloud}`,
+    rain: `${cloud}${drops}`,
+    drizzle: `${cloud}${drops}`,
+    storm: `${cloud}<span class="glyph-lightning"></span>${drops}`,
+    snow: `${cloud}${snow}`,
+    mist: `${moon}${fog}`,
+    fog: `${moon}${fog}`
+  }[normalized];
+
+  return `<span class="weather-glyph ${sizeClass} glyph-${normalized}" role="img" aria-label="${label}">${parts}</span>`;
+}
+
 function forecastInsight(current, nextItems) {
   const maxRainChance = Math.max(...nextItems.map((item) => item.pop || 0));
   const maxWind = Math.max(...nextItems.map((item) => item.wind.speed));
@@ -345,11 +394,12 @@ function renderDetails(current, city, airQuality) {
 function renderHourly(list, timezoneOffset) {
   els.hourlyContainer.innerHTML = list.slice(0, 8).map((item, index) => {
     const weather = item.weather[0].main;
+    const description = prettyDescription(item.weather[0].description);
     const rainChance = Math.round((item.pop || 0) * 100);
     return `
       <div class="hour-card">
         <span>${index === 0 ? "Now" : timeFromUnix(item.dt, timezoneOffset)}</span>
-        <img src="${icons[weather] || icons.Mist}" alt="">
+        ${weatherGlyph(weather, description)}
         <strong>${temp(item.main.temp)}</strong>
         <div class="rain-meter" aria-label="${rainChance}% chance of rain">
           <span style="width: ${rainChance}%"></span>
@@ -368,7 +418,7 @@ function renderDaily(list, timezoneOffset) {
           <strong>${index === 0 ? "Today" : dayFromUnix(day.dt, timezoneOffset)}</strong>
           <span>${prettyDescription(day.description)}</span>
         </div>
-        <img src="${icons[day.weather] || icons.Mist}" alt="">
+        ${weatherGlyph(day.weather, prettyDescription(day.description), "xs")}
         <div class="forecast-temp">${temp(day.max)} / ${temp(day.min)}</div>
       </div>
     `)
@@ -548,8 +598,8 @@ function renderWeather(data) {
   renderUnitButtons();
   els.cityName.textContent = `${data.city.name}, ${data.city.country}`;
   els.localTime.textContent = `Local time ${timeFromUnix(current.dt, data.city.timezone, { weekday: "long" })}`;
-  els.weatherIcon.src = icons[weather] || icons.Mist;
-  els.weatherIcon.alt = prettyDescription(current.weather[0].description);
+  els.weatherIcon.className = "current-weather-icon";
+  els.weatherIcon.innerHTML = weatherGlyph(weather, prettyDescription(current.weather[0].description), "lg");
   els.temperature.textContent = Math.round(convertTemp(current.main.temp));
   els.description.textContent = prettyDescription(current.weather[0].description);
   els.lastUpdated.textContent = `Updated ${timeFromUnix(current.dt, data.city.timezone)}`;
