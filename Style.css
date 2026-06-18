@@ -288,6 +288,8 @@ button {
 }
 
 .hero-panel {
+  position: relative;
+  z-index: 20;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 520px);
   gap: 24px;
@@ -358,6 +360,7 @@ button {
 
 .search-area {
   position: relative;
+  z-index: 30;
   min-width: 0;
 }
 
@@ -394,7 +397,7 @@ button {
   top: calc(100% + 8px);
   right: 0;
   left: 0;
-  z-index: 5;
+  z-index: 100;
   display: none;
   max-height: 300px;
   overflow: auto;
@@ -554,6 +557,8 @@ button {
 }
 
 .dashboard {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   gap: 18px;
