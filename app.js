@@ -4,8 +4,10 @@ const els = {
   body: document.body,
   searchForm: document.getElementById("search-form"),
   searchInput: document.getElementById("search-input"),
+  suggestionsList: document.getElementById("suggestions-list"),
   locationBtn: document.getElementById("location-btn"),
   unitBtns: document.querySelectorAll(".unit-btn"),
+  saveCityBtn: document.getElementById("save-city-btn"),
   cityName: document.getElementById("city-name"),
   localTime: document.getElementById("local-time"),
   lastUpdated: document.getElementById("last-updated"),
@@ -23,6 +25,7 @@ const els = {
   forecastContainer: document.getElementById("forecast-container"),
   trendChart: document.getElementById("trend-chart"),
   recentCities: document.getElementById("recent-cities"),
+  favoriteCities: document.getElementById("favorite-cities"),
   toast: document.getElementById("toast"),
   weatherBg: document.getElementById("weather-bg"),
   canvas: document.getElementById("weather-canvas")
@@ -46,6 +49,9 @@ const state = {
   data: null,
   unit: localStorage.getItem("weather-unit") || "metric",
   recent: JSON.parse(localStorage.getItem("weather-recent") || "[]"),
+  favorites: JSON.parse(localStorage.getItem("weather-favorites") || "[]"),
+  suggestions: [],
+  activeSuggestion: -1,
   reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches
 };
 
@@ -53,6 +59,16 @@ let particles = [];
 let particleType = null;
 let animationId = null;
 let toastTimer = null;
+let suggestionTimer = null;
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 function resizeCanvas() {
   const scale = window.devicePixelRatio || 1;
@@ -79,7 +95,7 @@ function convertTemp(value) {
 }
 
 function temp(value) {
-  return `${Math.round(convertTemp(value))}°`;
+  return `${Math.round(convertTemp(value))}\u00b0`;
 }
 
 function wind(value) {
@@ -91,6 +107,28 @@ function visibility(value) {
   if (!value && value !== 0) return "--";
   if (state.unit === "metric") return `${(value / 1000).toFixed(1)} km`;
   return `${(value / 1609.34).toFixed(1)} mi`;
+}
+
+function daylightDuration(city) {
+  const seconds = city.sunset - city.sunrise;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.round((seconds % 3600) / 60);
+  return `${hours}h ${minutes}m`;
+}
+
+function comfortLabel(current) {
+  const tempValue = current.main.temp;
+  const humidity = current.main.humidity;
+  if (tempValue >= 30 && humidity >= 60) return "Humid heat";
+  if (tempValue >= 30) return "Hot";
+  if (tempValue <= 8) return "Cold";
+  if (humidity >= 75) return "Humid";
+  if (current.wind.speed >= 8) return "Windy";
+  return "Comfortable";
+}
+
+function airQualityLabel(index) {
+  return ["--", "Good", "Fair", "Moderate", "Poor", "Very poor"][index] || "--";
 }
 
 function timeFromUnix(seconds, timezoneOffset, options = {}) {
@@ -160,6 +198,38 @@ function setBackground(weather, icon) {
     Mist: "linear-gradient(135deg,#607d86,#455a64 58%,#1a252d)"
   };
   els.weatherBg.style.background = backgrounds[weather] || backgrounds.Mist;
+}
+
+function updateWeatherClasses(weather, icon, currentTemp) {
+  const isNight = icon.includes("n");
+  const normalized = {
+    Clear: "clear",
+    Clouds: "clouds",
+    Rain: "rain",
+    Drizzle: "drizzle",
+    Thunderstorm: "storm",
+    Snow: "snow",
+    Mist: "mist",
+    Fog: "fog",
+    Haze: "fog"
+  }[weather] || "mist";
+  const classNames = [
+    "weather-clear",
+    "weather-clouds",
+    "weather-rain",
+    "weather-drizzle",
+    "weather-storm",
+    "weather-snow",
+    "weather-mist",
+    "weather-fog",
+    "weather-hot",
+    "weather-night"
+  ];
+
+  els.body.classList.remove(...classNames);
+  els.body.classList.add(`weather-${normalized}`);
+  els.body.classList.toggle("weather-night", isNight);
+  els.body.classList.toggle("weather-hot", !isNight && (currentTemp >= 30 || weather === "Clear"));
 }
 
 function stopAnimation() {
@@ -249,12 +319,15 @@ function groupDailyForecast(list, timezoneOffset) {
   });
 }
 
-function renderDetails(current, city) {
+function renderDetails(current, city, airQuality) {
   const details = [
     ["Humidity", `${current.main.humidity}%`],
     ["Wind", wind(current.wind.speed)],
     ["Pressure", `${current.main.pressure} hPa`],
     ["Visibility", visibility(current.visibility)],
+    ["Comfort", comfortLabel(current)],
+    ["Air quality", airQuality === undefined ? "Loading" : airQuality ? airQualityLabel(airQuality.main.aqi) : "--"],
+    ["Daylight", daylightDuration(city)],
     ["Sunrise", timeFromUnix(city.sunrise, city.timezone)],
     ["Sunset", timeFromUnix(city.sunset, city.timezone)]
   ];
@@ -262,8 +335,8 @@ function renderDetails(current, city) {
   els.detailGrid.innerHTML = details
     .map(([label, value]) => `
       <div class="detail-card">
-        <span>${label}</span>
-        <strong>${value}</strong>
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
       </div>
     `)
     .join("");
@@ -314,7 +387,7 @@ function renderTrend(list, timezoneOffset) {
     const height = 22 + ((value - min) / range) * 78;
     return `
       <div class="trend-bar">
-        <strong>${Math.round(value)}°</strong>
+        <strong>${Math.round(value)}\u00b0</strong>
         <div class="trend-track">
           <div class="trend-fill" style="height: ${height}%"></div>
         </div>
@@ -326,7 +399,7 @@ function renderTrend(list, timezoneOffset) {
 
 function renderRecentCities() {
   els.recentCities.innerHTML = state.recent
-    .map((city) => `<button class="recent-chip" type="button" data-city="${city}">${city}</button>`)
+    .map((city) => `<button class="recent-chip" type="button" data-city="${escapeHtml(city)}">${escapeHtml(city)}</button>`)
     .join("");
 }
 
@@ -336,11 +409,132 @@ function saveRecentCity(city) {
   renderRecentCities();
 }
 
+function renderFavoriteCities() {
+  if (!state.favorites.length) {
+    els.favoriteCities.innerHTML = "";
+    return;
+  }
+
+  els.favoriteCities.innerHTML = state.favorites
+    .map((city, index) => `
+      <button class="favorite-chip" type="button" data-index="${index}">
+        ${escapeHtml(city.name)}, ${escapeHtml(city.country)}
+      </button>
+    `)
+    .join("");
+}
+
+function currentFavoriteIndex() {
+  if (!state.data) return -1;
+  const { name, country, coord } = state.data.city;
+  return state.favorites.findIndex((city) =>
+    city.name.toLowerCase() === name.toLowerCase()
+    && city.country === country
+    && Math.abs(city.lat - coord.lat) < 0.2
+    && Math.abs(city.lon - coord.lon) < 0.2
+  );
+}
+
+function renderSaveButton() {
+  const isSaved = currentFavoriteIndex() >= 0;
+  els.saveCityBtn.classList.toggle("saved", isSaved);
+  els.saveCityBtn.textContent = isSaved ? "Saved" : "Save";
+}
+
+function toggleFavoriteCity() {
+  if (!state.data) return;
+  const existingIndex = currentFavoriteIndex();
+
+  if (existingIndex >= 0) {
+    state.favorites.splice(existingIndex, 1);
+  } else {
+    const { name, country, coord } = state.data.city;
+    state.favorites.unshift({ name, country, lat: coord.lat, lon: coord.lon });
+    state.favorites = state.favorites.slice(0, 6);
+  }
+
+  localStorage.setItem("weather-favorites", JSON.stringify(state.favorites));
+  renderFavoriteCities();
+  renderSaveButton();
+}
+
 function renderUnitButtons() {
   els.unitBtns.forEach((button) => {
     button.classList.toggle("active", button.dataset.unit === state.unit);
   });
   els.unitSymbol.textContent = state.unit === "metric" ? "C" : "F";
+}
+
+function closeSuggestions() {
+  state.suggestions = [];
+  state.activeSuggestion = -1;
+  els.suggestionsList.classList.remove("open");
+  els.suggestionsList.innerHTML = "";
+  els.searchInput.setAttribute("aria-expanded", "false");
+}
+
+function renderSuggestions() {
+  if (!state.suggestions.length) {
+    closeSuggestions();
+    return;
+  }
+
+  els.suggestionsList.innerHTML = state.suggestions
+    .map((item, index) => {
+      const region = [item.state, item.country].filter(Boolean).join(", ");
+      return `
+        <button class="suggestion-item ${index === state.activeSuggestion ? "active" : ""}" type="button" role="option" data-index="${index}">
+          <span>
+            <span class="suggestion-main">${escapeHtml(item.name)}</span>
+            <span class="suggestion-meta">${escapeHtml(region)}</span>
+          </span>
+          <span class="suggestion-meta">${item.lat.toFixed(2)}, ${item.lon.toFixed(2)}</span>
+        </button>
+      `;
+    })
+    .join("");
+  els.suggestionsList.classList.add("open");
+  els.searchInput.setAttribute("aria-expanded", "true");
+}
+
+async function fetchCitySuggestions(query) {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) {
+    closeSuggestions();
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(trimmed)}&limit=6&appid=${apiKey}`);
+    if (!response.ok) throw new Error("Unable to load suggestions.");
+    const suggestions = await response.json();
+    state.suggestions = suggestions.filter((item) => item.name && item.country);
+    state.activeSuggestion = state.suggestions.length ? 0 : -1;
+    renderSuggestions();
+  } catch {
+    closeSuggestions();
+  }
+}
+
+function queueSuggestions() {
+  clearTimeout(suggestionTimer);
+  suggestionTimer = setTimeout(() => fetchCitySuggestions(els.searchInput.value), 220);
+}
+
+function selectSuggestion(index) {
+  const item = state.suggestions[index];
+  if (!item) return;
+
+  els.searchInput.value = `${item.name}, ${item.country}`;
+  closeSuggestions();
+  fetchWeatherByCoords(item.lat, item.lon);
+}
+
+async function fetchAirQuality(lat, lon) {
+  const response = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "Unable to load air quality.");
+  return data.list[0];
 }
 
 function renderWeather(data) {
@@ -350,6 +544,7 @@ function renderWeather(data) {
   const daily = groupDailyForecast(data.list, data.city.timezone);
   const today = daily[0];
 
+  updateWeatherClasses(weather, current.weather[0].icon, current.main.temp);
   renderUnitButtons();
   els.cityName.textContent = `${data.city.name}, ${data.city.country}`;
   els.localTime.textContent = `Local time ${timeFromUnix(current.dt, data.city.timezone, { weekday: "long" })}`;
@@ -364,12 +559,21 @@ function renderWeather(data) {
   els.highLow.textContent = `${temp(today.max)} / ${temp(today.min)}`;
   els.summaryLine.textContent = `${prettyDescription(current.weather[0].description)} in ${data.city.name}, with winds at ${wind(current.wind.speed)}.`;
 
-  renderDetails(current, data.city);
+  renderDetails(current, data.city, undefined);
   renderHourly(data.list, data.city.timezone);
   renderDaily(data.list, data.city.timezone);
   renderTrend(data.list, data.city.timezone);
   updateEffects(weather, current.weather[0].icon);
   saveRecentCity(data.city.name);
+  renderSaveButton();
+
+  fetchAirQuality(data.city.coord.lat, data.city.coord.lon)
+    .then((airQuality) => {
+      if (state.data === data) renderDetails(current, data.city, airQuality);
+    })
+    .catch(() => {
+      if (state.data === data) renderDetails(current, data.city, null);
+    });
 }
 
 async function fetchWeatherByCity(city) {
@@ -420,10 +624,43 @@ function useCurrentLocation() {
 
 els.searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (state.suggestions.length && state.activeSuggestion >= 0) {
+    selectSuggestion(state.activeSuggestion);
+    return;
+  }
+  closeSuggestions();
   fetchWeatherByCity(els.searchInput.value);
 });
 
+els.searchInput.addEventListener("input", queueSuggestions);
+
+els.searchInput.addEventListener("keydown", (event) => {
+  if (!state.suggestions.length) return;
+
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    state.activeSuggestion = (state.activeSuggestion + 1) % state.suggestions.length;
+    renderSuggestions();
+  }
+
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    state.activeSuggestion = (state.activeSuggestion - 1 + state.suggestions.length) % state.suggestions.length;
+    renderSuggestions();
+  }
+
+  if (event.key === "Escape") {
+    closeSuggestions();
+  }
+});
+
+els.suggestionsList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-index]");
+  if (button) selectSuggestion(Number(button.dataset.index));
+});
+
 els.locationBtn.addEventListener("click", useCurrentLocation);
+els.saveCityBtn.addEventListener("click", toggleFavoriteCity);
 
 els.unitBtns.forEach((button) => {
   button.addEventListener("click", () => {
@@ -439,6 +676,17 @@ els.recentCities.addEventListener("click", (event) => {
   if (button) fetchWeatherByCity(button.dataset.city);
 });
 
+els.favoriteCities.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-index]");
+  if (!button) return;
+  const city = state.favorites[Number(button.dataset.index)];
+  if (city) fetchWeatherByCoords(city.lat, city.lon);
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".search-area")) closeSuggestions();
+});
+
 window.addEventListener("resize", () => {
   resizeCanvas();
   if (particleType) createParticles(particleType);
@@ -446,5 +694,6 @@ window.addEventListener("resize", () => {
 
 resizeCanvas();
 renderRecentCities();
+renderFavoriteCities();
 renderUnitButtons();
 useCurrentLocation();

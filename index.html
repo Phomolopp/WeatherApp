@@ -11,6 +11,17 @@
 </head>
 <body>
   <div class="weather-bg" id="weather-bg"></div>
+  <div class="weather-scene" id="weather-scene" aria-hidden="true">
+    <div class="sun-core"></div>
+    <div class="heat-haze"></div>
+    <div class="moon-core"></div>
+    <div class="cloud cloud-one"></div>
+    <div class="cloud cloud-two"></div>
+    <div class="cloud cloud-three"></div>
+    <div class="fog-layer fog-one"></div>
+    <div class="fog-layer fog-two"></div>
+    <div class="lightning-bolt"></div>
+  </div>
   <canvas id="weather-canvas" aria-hidden="true"></canvas>
 
   <main class="app-shell">
@@ -26,10 +37,13 @@
       </div>
 
       <form class="search-panel" id="search-form">
-        <label class="search-box" for="search-input">
-          <span class="search-icon" aria-hidden="true"></span>
-          <input type="search" id="search-input" placeholder="Search city, e.g. Johannesburg" autocomplete="off">
-        </label>
+        <div class="search-area">
+          <label class="search-box" for="search-input">
+            <span class="search-icon" aria-hidden="true"></span>
+            <input type="search" id="search-input" placeholder="Search city, e.g. Johannesburg" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions-list">
+          </label>
+          <div class="suggestions-list" id="suggestions-list" role="listbox"></div>
+        </div>
         <button class="primary-btn" id="search-btn" type="submit">Search</button>
         <button class="icon-btn" id="location-btn" type="button" aria-label="Use current location" title="Use current location">
           <span class="location-icon" aria-hidden="true"></span>
@@ -41,6 +55,7 @@
       </form>
 
       <div class="recent-cities" id="recent-cities" aria-label="Recent cities"></div>
+      <div class="favorite-cities" id="favorite-cities" aria-label="Favorite cities"></div>
     </section>
 
     <section class="dashboard" aria-live="polite">
@@ -51,7 +66,10 @@
             <h2 id="city-name">Loading...</h2>
             <p id="local-time">--</p>
           </div>
-          <img id="weather-icon" src="images/clouds.png" alt="">
+          <div class="current-actions">
+            <button class="save-city-btn" id="save-city-btn" type="button">Save</button>
+            <img id="weather-icon" src="images/clouds.png" alt="">
+          </div>
         </div>
         <div class="temperature-row">
           <span id="temperature">--</span>
